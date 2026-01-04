@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FilePlus, Users } from 'lucide-react';
 
@@ -6,12 +6,23 @@ import Header from './components/common/Header';
 import PatientDetailsForm from './components/prescription/PatientDetailsForm';
 import PrescriptionForm from './components/prescription/PrescriptionForm';
 import PrescriptionPreview from './components/prescription/PrescriptionPreview';
-import AnalyticsDashboard from './components/analytics/AnalyticsDashboard';
 import Login from './components/auth/Login';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import PatientList from './components/patient/PatientList';
 import { savePrescription } from './utils/storage';
+import { ThemeProvider } from './context/ThemeContext';
+
+// Lazy load page-level components for route-based code splitting
+const AnalyticsDashboard = lazy(() => import('./components/analytics/AnalyticsDashboard'));
+const PatientList = lazy(() => import('./components/patient/PatientList'));
+const ClinicSettings = lazy(() => import('./components/settings/ClinicSettings'));
+
+// Page loading fallback
+const PageLoader = () => (
+  <div className="container main-content flex items-center justify-center" style={{ minHeight: '50vh' }}>
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+  </div>
+);
 
 function DoctorInterface() {
   const [patientData, setPatientData] = useState({ name: '', age: '', gender: '', date: new Date().toISOString().split('T')[0] });
@@ -147,29 +158,32 @@ function HeaderWrapper() {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="app-container">
-          <Routes>
-            <Route path="/login" element={<Login />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="app-container">
+            <Routes>
+              <Route path="/login" element={<Login />} />
 
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <>
-                  <HeaderWrapper />
-                  <NavBar />
-                  <Routes>
-                    <Route path="/" element={<DoctorInterface />} />
-                    <Route path="/analytics" element={<AnalyticsDashboard />} />
-                    <Route path="/patients" element={<PatientList />} />
-                  </Routes>
-                </>
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+              <Route path="/*" element={
+                <ProtectedRoute>
+                  <>
+                    <HeaderWrapper />
+                    <NavBar />
+                    <Routes>
+                      <Route path="/" element={<DoctorInterface />} />
+                      <Route path="/analytics" element={<Suspense fallback={<PageLoader />}><AnalyticsDashboard /></Suspense>} />
+                      <Route path="/patients" element={<Suspense fallback={<PageLoader />}><PatientList /></Suspense>} />
+                      <Route path="/settings" element={<Suspense fallback={<PageLoader />}><ClinicSettings /></Suspense>} />
+                    </Routes>
+                  </>
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

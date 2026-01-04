@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import React, { useState, Suspense, lazy } from 'react';
 import { getAnalyticsData } from '../../utils/storage';
-import DiseaseMap from '../map/DiseaseMap';
+
+// Lazy load heavy components for better initial load performance
+const DiseaseMap = lazy(() => import('../map/DiseaseMap'));
+const DiseaseChart = lazy(() => import('./DiseaseChart'));
+const PatientTrendsChart = lazy(() => import('./PatientTrendsChart'));
+
+// Loading skeleton component
+const ChartSkeleton = () => (
+    <div className="animate-pulse flex flex-col items-center justify-center h-full">
+        <div className="w-3/4 h-4 bg-slate-200 rounded mb-4"></div>
+        <div className="w-full h-48 bg-slate-100 rounded"></div>
+    </div>
+);
 
 export default function AnalyticsDashboard() {
     const [data] = useState(() => getAnalyticsData());
@@ -22,49 +33,28 @@ export default function AnalyticsDashboard() {
                 {/* Disease Trends */}
                 <div className="card p-6 h-96">
                     <h3 className="text-lg font-bold mb-4 text-slate-700">Top Diagnoses</h3>
-                    {data.diseaseTrends.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="90%">
-                            <BarChart data={data.diseaseTrends} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                <XAxis type="number" />
-                                <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
-                                <Tooltip cursor={{ fill: 'transparent' }} />
-                                <Bar dataKey="count" fill="#0e7490" radius={[0, 4, 4, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-slate-400">No data available</div>
-                    )}
+                    <Suspense fallback={<ChartSkeleton />}>
+                        <DiseaseChart data={data.diseaseTrends} />
+                    </Suspense>
                 </div>
 
-                {/* Medicine Usage */}
+                {/* Patient Trends */}
                 <div className="card p-6 h-96">
-                    <h3 className="text-lg font-bold mb-4 text-slate-700">Top Prescribed Medicines</h3>
-                    {data.topMedicines.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="90%">
-                            <BarChart data={data.topMedicines} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={60} />
-                                <YAxis />
-                                <Tooltip />
-                                <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]} barSize={30}>
-                                    {data.topMedicines.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={['#0e7490', '#22d3ee', '#818cf8', '#f472b6', '#34d399'][index % 5]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-slate-400">No data available</div>
-                    )}
+                    <h3 className="text-lg font-bold mb-4 text-slate-700">Patient Trends (Last 7 Days)</h3>
+                    <Suspense fallback={<ChartSkeleton />}>
+                        <PatientTrendsChart data={data.patientTrends} />
+                    </Suspense>
                 </div>
             </div>
 
             {/* Disease Map */}
             <div className="mt-8">
                 <h3 className="text-xl font-bold mb-4 text-slate-800">Regional Disease Hotspots</h3>
-                <DiseaseMap />
+                <Suspense fallback={<div className="h-96 bg-slate-100 animate-pulse rounded-lg flex items-center justify-center text-slate-400">Loading map...</div>}>
+                    <DiseaseMap />
+                </Suspense>
             </div>
         </div>
     );
 }
+

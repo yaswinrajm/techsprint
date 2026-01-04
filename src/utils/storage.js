@@ -56,8 +56,23 @@ export const getAnalyticsData = () => {
         }
     });
 
+    // Aggregate patients by date
+    const dateCounts = {};
+    data.forEach(p => {
+        if (p.timestamp) {
+            const date = new Date(p.timestamp).toLocaleDateString('en-US', { weekday: 'short' }); // e.g., "Mon"
+            dateCounts[date] = (dateCounts[date] || 0) + 1;
+        }
+    });
+
+    // Mock trend if no data, otherwise map
+    const patientTrends = Object.keys(dateCounts).length > 0
+        ? Object.entries(dateCounts).map(([date, patients]) => ({ date, patients }))
+        : [];
+
     return {
         totalPrescriptions: data.length,
+        patientTrends,
         diseaseTrends: Object.entries(diseaseCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count)

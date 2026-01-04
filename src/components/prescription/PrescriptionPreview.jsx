@@ -1,7 +1,16 @@
-import React from 'react';
-import { Stethoscope, Printer } from 'lucide-react';
+import { Stethoscope, Printer, Download } from 'lucide-react';
+import { generatePrescriptionPDF } from '../../utils/pdfGenerator';
 
 export default function PrescriptionPreview({ patientData, diagnosis, medicines, onPrint }) {
+    const handleDownload = () => {
+        const settings = JSON.parse(localStorage.getItem('clinicSettings') || '{}');
+        generatePrescriptionPDF({
+            patientData,
+            diagnosis,
+            medicines
+        }, settings);
+    };
+
     const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric'
     });
@@ -10,9 +19,14 @@ export default function PrescriptionPreview({ patientData, diagnosis, medicines,
         <div className="card" style={{ height: 'fit-content' }}>
             <div className="flex justify-between items-center mb-6 no-print">
                 <h3 className="text-lg font-bold">Prescription Preview</h3>
-                <button onClick={onPrint} className="btn btn-primary">
-                    <Printer size={16} /> Print
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={handleDownload} className="btn btn-secondary">
+                        <Download size={16} /> PDF
+                    </button>
+                    <button onClick={onPrint} className="btn btn-primary">
+                        <Printer size={16} /> Print
+                    </button>
+                </div>
             </div>
 
             <div id="printable-area" style={{
@@ -27,15 +41,22 @@ export default function PrescriptionPreview({ patientData, diagnosis, medicines,
                     <div>
                         <div className="flex items-center gap-2 text-cyan-700 mb-2">
                             <Stethoscope size={24} />
-                            <span className="text-xl font-bold">MediScript Clinic</span>
+                            <span className="text-xl font-bold">
+                                {JSON.parse(localStorage.getItem('clinicSettings') || '{}').clinicName || 'MediScript Clinic'}
+                            </span>
                         </div>
-                        <p className="text-sm text-slate-500">Dr. Rahul TP, MBBS, MD</p>
-                        <p className="text-sm text-slate-500">Reg No: 12345678</p>
+                        <p className="text-sm text-slate-500">
+                            {JSON.parse(localStorage.getItem('clinicSettings') || '{}').doctorName || 'Dr. Rahul TP'}
+                        </p>
+                        <p className="text-sm text-slate-500">
+                            {JSON.parse(localStorage.getItem('clinicSettings') || '{}').qualification || 'MBBS, MD'}
+                        </p>
                     </div>
                     <div className="text-right text-sm text-slate-500">
-                        <p>123 Health Avenue,</p>
-                        <p>Wellness City, 560001</p>
-                        <p>Ph: +91 98765 43210</p>
+                        {(JSON.parse(localStorage.getItem('clinicSettings') || '{}').address || '123 Health Avenue,\nWellness City').split('\n').map((line, i) => (
+                            <p key={i}>{line}</p>
+                        ))}
+                        <p>{JSON.parse(localStorage.getItem('clinicSettings') || '{}').phone || '+91 98765 43210'}</p>
                     </div>
                 </div>
 
